@@ -1,0 +1,84 @@
+select * from layoffs;
+
+#Creating a stage table
+CREATE TABLE layoff_backup AS select * from layoffs;
+select count(*) from layoff_backup;
+
+#Removing duplicate rows from table
+with duplicates as
+(Select *, row_number() OVER (
+PARTITION BY company, location,industry,total_laid_off,percentage_laid_off,`date`,stage,country,funds_raised_millions) as row_num
+From layoff_backup)
+select * from duplicates
+where row_num > 1;
+
+
+create table lay_offbackup2 as 
+select * from (Select *, row_number() OVER (
+PARTITION BY company, location,industry,total_laid_off,percentage_laid_off,`date`,stage,country,funds_raised_millions) as row_num
+From layoff_backup) dup
+where row_num = 1;
+
+#Standardizing the data
+select company, TRIM(company) from lay_offbackup2;
+
+UPDATE lay_offbackup2
+set company = TRIM(company);
+
+select distinct industry from lay_offbackup2 order by 1;
+select  industry from lay_offbackup2 where industry like '%Crypto%';
+
+UPDATE lay_offbackup2
+set industry = 'Crypto'
+where industry like '%Crypto%';
+
+select DISTINCT country from lay_offbackup2 order by 1;
+
+UPDATE lay_offbackup2
+set country = TRIM(TRAILING '.' FROM country) 
+where country like 'United States%';
+
+select `date` from lay_offbackup2;
+
+UPDATE lay_offbackup2
+set `date` =  str_to_date(`date`,'%m/%d/%Y');
+
+#Change the data type of date column from string to date
+ALTER TABLE lay_offbackup2
+MODIFY COLUMN `date` DATE;
+
+select * from lay_offbackup2;
+
+#Taking care of Blank and Null values
+select  * from lay_offbackup2 where industry is null or industry = '';
+select  * from lay_offbackup2 where company = 'Juul';
+
+#Setting all blanks in industry column to null
+UPDATE lay_offbackup2
+SET industry = null
+WHERE industry = '';
+
+
+select t1.company ,t1.location,t2.company, t2.location,t1.industry,t2.industry from 
+lay_offbackup2
+join
+lay_offbackup2
+on t1.company = t2.company and t1.location = t2.location
+where (t1.industry is null )and (t2.industry is  null);
+
+UPDATE
+lay_offbackup2 t1
+join
+lay_offbackup2 t2
+on t1.company = t2.company and t1.location = t2.location
+SET t1.industry = t2.industry
+where (t1.industry is null ) and (t2.industry is not null);
+
+#Removing data we don't need
+delete from lay_offbackup2
+where total_laid_off is null and percentage_laid_off is null;
+
+alter table lay_offbackup2
+drop column row_num;
+
+select * from lay_offbackup2;

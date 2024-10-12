@@ -1,0 +1,62 @@
+select * from lay_offbackup2;
+
+#To find the maximum and minimum number of people laid off
+select max(total_laid_off) , max(percentage_laid_off) from lay_offbackup2;
+
+#To find the companies who laid off all the employees
+select * from lay_offbackup2 where percentage_laid_off = 1;
+
+#To explore the total people laid off from each country
+select country,sum(total_laid_off) from lay_offbackup2
+group by 1
+order by 2 desc;
+
+#To find out the ranks of each country based on the people they laid off
+with cte as
+(select country,sum(total_laid_off) as total from lay_offbackup2
+group by 1
+order by 2 desc)
+select country,total,
+rank() over(order by total desc ) as `rank`
+from cte;
+
+#To find out the period in which the lay off happened
+select min(`date`),max(`date`) from lay_offbackup2;
+
+#To explore the total people laid off from each industry
+select industry,sum(total_laid_off) as total from lay_offbackup2
+group by 1
+order by 2 desc;
+
+#Filtering year from the date column
+select year(`date`),sum(total_laid_off) as total from lay_offbackup2
+group by year(`date`)
+order by 1 desc;
+
+# Rolling Total
+
+with cte as
+(
+select substr(`date`,1,7) as `month`,sum(total_laid_off) as total
+from lay_offbackup2
+where substr(`date`,1,7) is not null
+group by month
+order by month)
+select `month`,total,sum(total) over(order by `month`) as rolling_total
+from cte;
+
+#To find out the top five companies in each year based on the number of people they laid off
+with cte as 
+(select company, year(`date`) as Year, sum(total_laid_off) as total from lay_offbackup2
+group by company,`Year`
+order by company)
+, ranking as
+
+(select company,`Year`,total,dense_rank() over(partition by `Year`order by total desc) as company_rank
+from cte
+where `Year` is not null and total is not null 
+order by `Year`)
+select * from ranking
+where company_rank <= 5;
+
+
