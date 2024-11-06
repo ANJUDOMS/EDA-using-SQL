@@ -1,2 +1,2 @@
 # EDA-using-SQL
-This project contains end to end Data cleaning and Exploratory Data Analysis using SQL.
+In this project, I applied advanced SQL functions for thorough data cleaning and exploratory data analysis. The process involved handling a large dataset and ensuring accuracy in the results. I analyzed layoff trends from 2020 to 2023, focusing on key factors. Ultimately, I identified the top countries, companies, and industries that experienced the highest layoffs during this period.
